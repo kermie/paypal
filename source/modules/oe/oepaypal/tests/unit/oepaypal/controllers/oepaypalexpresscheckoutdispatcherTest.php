@@ -90,8 +90,7 @@ class Unit_oePayPal_Controllers_oePayPalExpressCheckoutDispatcherTest extends Ox
         $oPrice->expects($this->once())->method("getBruttoPrice")->will($this->returnValue(129.00));
 
         // preparing basket
-        $oBasket = $this->getMock("oxBasket", array("setBasketUser", "setPayment", "setShipping", "calculateBasket", "getAdditionalServicesVatPercent", "getPrice"));
-        $oBasket->expects($this->once())->method("setBasketUser")->with($this->equalTo($oUser));
+        $oBasket = $this->getMock("oxBasket", array("setPayment", "setShipping", "calculateBasket", "getAdditionalServicesVatPercent", "getPrice"));
         $oBasket->expects($this->once())->method("setPayment")->with($this->equalTo("oxidpaypal"));
         $oBasket->expects($this->once())->method("setShipping")->with($this->equalTo("123"));
         $oBasket->expects($this->once())->method("calculateBasket")->with($this->equalTo(true));
@@ -1132,6 +1131,8 @@ class Unit_oePayPal_Controllers_oePayPalExpressCheckoutDispatcherTest extends Ox
             'PAYMENTREQUESTINFO_0_ERRORCODE'          => '0',
         );
 
+        oxRegistry::set('oxVatSelector', new modOxVatSelector);
+
         $oArticle = oxNew('oxarticle');
         $oArticle->disableLazyLoading();
         $oArticle->setId(substr_replace( oxUtilsObject::getInstance()->generateUId(), '_', 0, 1 ));
@@ -1172,6 +1173,10 @@ class Unit_oePayPal_Controllers_oePayPalExpressCheckoutDispatcherTest extends Ox
         //Change to german address, verify VAT for Germany is charged
         $this->_changeUser();
 
+        //during regular checkout, shop will work with a new instance of oxVatSelector
+        //Make sure we use one with clean cache here
+        oxRegistry::get('oxVatSelector')->cleanInstanceCache();
+
         $oBasket = $this->getSession()->getBasket();
         $oBasket->calculateBasket(true);
         $this->assertSame(6.72, $oBasket->getNettoSum());
@@ -1199,5 +1204,13 @@ class Unit_oePayPal_Controllers_oePayPalExpressCheckoutDispatcherTest extends Ox
         $oUserComponent = oxNew('oxcmp_user');
         $this->assertSame('payment', $oUserComponent->changeUser());
 
+    }
+}
+
+class modOxVatSelector extends oxVatSelector
+{
+    public static function cleanInstanceCache()
+    {
+        self::$_aUserVatCache = array();
     }
 }

@@ -165,7 +165,6 @@ class oePayPalExpressCheckoutDispatcher extends oePayPalDispatcher
         }
 
         $oBasket = $this->getSession()->getBasket();
-        $oBasket->setBasketUser($oUser);
 
         // setting PayPal as current active payment
         $this->getSession()->setVariable('paymentid', "oxidpaypal");
